@@ -15,6 +15,7 @@ import ProductIntro from "./components/ProductDetail/ProductIntro";
 import QnA from "./components/ProductDetail/QnA";
 import Review from "./components/ProductDetail/Review";
 import RegProduct from "./pages/admin/products/RegProduct";
+import DiscountManagement from "./pages/admin/products/DiscountManagement";
 import RegReview from "./components/ProductDetail/RegReview";
 import axios from "axios";
 import MemberList from "./pages/admin/MemberList";
@@ -37,6 +38,7 @@ import ScrollToTop from "./common/ScrollToTop";
 import SurveyResult from "./pages/admin/products/SurveyResult";
 import Paymentpage from "./pages/user/Paymentpage";
 import Dibs from "./pages/user/products/dibs";
+import GiftSet from "./pages/user/products/GiftSet";
 
 function App() {
   return (
@@ -59,6 +61,7 @@ function App() {
             path="discount-product-list"
             element={<DiscountProductList />}
           />
+          <Route path="gift-set" element={ <GiftSet /> } />
         </Route>
 
         {/* 일반사용자 개인페이지 */}
@@ -80,6 +83,7 @@ function App() {
           <Route path="" element={<AdminHome />} />
           <Route path="sales-list" element={<SalesList />} />
           <Route path="reg-product" element={<RegProduct />} />
+          <Route path="discount-management" element={<DiscountManagement />} />
           <Route path="member-list" element={<MemberList />} />
           <Route path="survey-result" element={<SurveyResult />} />
           <Route path="qna-reply" element={<Reply />} />

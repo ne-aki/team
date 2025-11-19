@@ -1,25 +1,34 @@
 .container {
   width: 1500px;
   margin: auto;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
 }
 
 .header {
-  height: 100%;
+  height: auto;
   background-color: rgb(80, 19, 19);
   color: white;
+  flex-shrink: 0;
 }
 
 .body {
   display: flex;
-  height: 95vh;
+  flex: 1;
+  overflow: hidden;
 }
 
 .side_menu {
   width: 20%;
   background-color: #D9C3A7;
+  overflow-y: auto;
+  overflow-x: hidden;
 }
 
 .content {
   width: 80%;
   background-color: #f8f8f8;
+  overflow-y: auto;
+  overflow-x: hidden;
 }

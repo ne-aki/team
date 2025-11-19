@@ -22,4 +22,7 @@ public interface BuyMapper {
   //각 행의 장바구니 데이터 구매
   public void buyEachCartItem(BuyDTO buyDTO);
 
+  //주문취소
+  public void deleteBuy(int buyNum);
+
 }

@@ -14,6 +14,10 @@ const BuyList = () => {
   const router = useRouter();
   const [buyList, setBuyList] = useState([]);
   const [userInfo, setUserInfo] = useState(null);
+  const [reloading, setReloading] = useState(0);
+
+  // 주문 취소 가능 기간 설정 (일 단위)
+  const CANCEL_AVAILABLE_DAYS = 3;
 
   // 로그인 정보 가져오기
   useEffect(() => {
@@ -38,7 +42,7 @@ const BuyList = () => {
     getLoginInfo();
   }, []);
 
-  // 구매 목록 조회
+  // 주문 목록 조회
   useEffect(() => {
     if (!userInfo?.memId) return;
     
@@ -51,74 +55,132 @@ const BuyList = () => {
       }
     };
     fetchBuyList();
-  }, [userInfo]);
+  }, [userInfo, reloading]);
 
   // 총 금액 계산
   const getTotalAmount = () => {
     return buyList.reduce((sum, item) => sum + item.totalPrice, 0);
   };
 
+  // ✅ 취소 가능 여부 확인
+  const isCancelable = (buyDate) => {
+    const purchaseDate = dayjs(buyDate);
+    const today = dayjs();
+    const daysDiff = today.diff(purchaseDate, 'day');
+    
+    return daysDiff <= CANCEL_AVAILABLE_DAYS;
+  };
+
+  // 주문 취소
+  const deleteBuyItem = (buyNum, buyDate) => {
+    // ✅ 취소 가능 기간 체크
+    if (!isCancelable(buyDate)) {
+      Alert.alert(
+        "주문 취소 불가", 
+        `구매일로부터 ${CANCEL_AVAILABLE_DAYS}일이 지나 취소가 불가능합니다.`
+      );
+      return;
+    }
+
+    Alert.alert("확인", "해당 주문을 취소하시겠습니까?", [
+      { text: "아니오", style: "cancel" },
+      {
+        text: "예",
+        style: "destructive",
+        onPress: () => {
+          axios
+            .delete(`${SERVER_URL}/buy/${buyNum}`)
+            .then(() => {
+              Alert.alert("성공", "주문이 취소되었습니다.");
+              setReloading(reloading + 500);
+            })
+            .catch(() => {
+              Alert.alert("오류", "삭제 중 오류가 발생했습니다.");
+            });
+        },
+      },
+    ]);
+  };
+
   return (
     <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-      <SafeAreaView style={styles.container} >
-        <ScrollView>
-          <PageTitle title='주문목록' />
+      <SafeAreaView style={styles.container}>
+        <PageTitle title='주문목록' />        
+        
+        {/* 테이블 헤더 */}
+        <View style={styles.tableHeader}>
+          <Text style={[styles.headerCell, styles.nameCell]}>상품명</Text>
+          <Text style={[styles.headerCell, styles.priceCell]}>가격</Text>
+          <Text style={[styles.headerCell, styles.qtyCell]}>수량</Text>
+          <Text style={[styles.headerCell, styles.totalCell]}>총 구매 가격</Text>
+          <Text style={[styles.headerCell, styles.dateCell]}>구매일</Text>
+          <Text style={[styles.headerCell, styles.cancelCell]}>주문취소</Text>
+        </View>
 
-          {/* 테이블 헤더 */}
-          <View style={styles.tableHeader}>
-            <Text style={[styles.headerCell, styles.nameCell]}>상품명</Text>
-            <Text style={[styles.headerCell, styles.priceCell]}>가격</Text>
-            <Text style={[styles.headerCell, styles.qtyCell]}>수량</Text>
-            <Text style={[styles.headerCell, styles.totalCell]}>총 구매 가격</Text>
-            <Text style={[styles.headerCell, styles.dateCell]}>구매일</Text>
-            <Text style={[styles.headerCell, styles.cancelCell]}>주문취소</Text>
-          </View>
-
-          {/* 테이블 바디 */}
+        {/* 테이블 바디 */}
+        <ScrollView style={styles.scrollView}>
           {buyList.length === 0 ? (
             <View style={styles.emptyContainer}>
               <Text style={styles.emptyText}>주문 내역이 없습니다.</Text>
             </View>
           ) : (
-            buyList.map((e, i) => (
-              <View key={i} style={styles.tableRow}>
-                <Text style={[styles.cell, styles.nameCell]}>{e.itemDTO.itemName}</Text>
-                <Text style={[styles.cell, styles.priceCell]}>
-                  {e.itemDTO.price.toLocaleString()}원
-                </Text>
-                <Text style={[styles.cell, styles.qtyCell]}>{e.buyCnt}개</Text>
-                <Text style={[styles.cell, styles.totalCell]}>
-                  {e.totalPrice.toLocaleString()}원
-                </Text>
-                <Text style={[styles.cell, styles.dateCell]}>
-                  {dayjs(e.buyDate).format('YYYY.MM.DD')}
-                </Text>
-                <View style={[styles.cancelCell]}>
-                  <TouchableOpacity 
-                    style={styles.cancelButton}
-                    onPress={() => {
-                      console.log('주문 취소');
-                    }}
-                  >
-                    <Text style={styles.cancelButtonText}>주문취소</Text>
-                  </TouchableOpacity>
-                </View>
-              </View>
-            ))
-          )}
+            buyList.map((e, i) => {
+              const canCancel = isCancelable(e.buyDate);
+              const daysSincePurchase = dayjs().diff(dayjs(e.buyDate), 'day');
 
-          {/* 총 금액 */}
-          {buyList.length > 0 && (
-            <View style={styles.totalSummary}>
-              <View style={styles.totalBox}>
-                <Text style={styles.totalLabel}>총 주문 금액</Text>
-                <Text style={styles.totalAmount}>
-                  {getTotalAmount().toLocaleString()}원
-                </Text>
-              </View>
-            </View>
+              return (
+                <View key={i} style={styles.tableRow}>
+                  <Text style={[styles.cell, styles.nameCell]}>{e.itemDTO.itemName}</Text>
+                  <Text style={[styles.cell, styles.priceCell]}>
+                    {e.itemDTO.price.toLocaleString()}원
+                  </Text>
+                  <Text style={[styles.cell, styles.qtyCell]}>{e.buyCnt}개</Text>
+                  <Text style={[styles.cell, styles.totalCell]}>
+                    {e.totalPrice.toLocaleString()}원
+                  </Text>
+                  <Text style={[styles.cell, styles.dateCell]}>
+                    {dayjs(e.buyDate).format('YYYY.MM.DD')}
+                  </Text>
+                  <View style={[styles.cancelCell]}>
+                    {canCancel ? (
+                      <TouchableOpacity 
+                        style={styles.cancelButton}
+                        onPress={() => deleteBuyItem(e.buyNum, e.buyDate)}
+                      >
+                        <Text style={styles.cancelButtonText}>주문취소</Text>
+                      </TouchableOpacity>
+                    ) : (
+                      <View style={styles.disabledButton}>
+                        <Text style={styles.disabledButtonText}>취소불가</Text>
+                      </View>
+                    )}
+                  </View>
+                </View>
+              );
+            })
           )}
         </ScrollView>
+
+        {/* 안내 문구 */}
+        {buyList.length > 0 && (
+          <View style={styles.noticeContainer}>
+            <Text style={styles.noticeText}>
+              * 구매일로부터 {CANCEL_AVAILABLE_DAYS}일 이내 주문만 취소 가능합니다.
+            </Text>
+          </View>
+        )}
+
+        {/* 총 금액 - 고정 */}
+        {buyList.length > 0 && (
+          <View style={styles.totalSummary}>
+            <View style={styles.totalBox}>
+              <Text style={styles.totalLabel}>총 주문 금액</Text>
+              <Text style={styles.totalAmount}>
+                {getTotalAmount().toLocaleString()}원
+              </Text>
+            </View>
+          </View>
+        )}
       </SafeAreaView>
     </TouchableWithoutFeedback>
   );
@@ -204,8 +266,20 @@ const styles = StyleSheet.create({
     color: '#6c757d',
     textAlign: 'center',
   },
+  noticeContainer: {
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    backgroundColor: '#fff3cd',
+    borderRadius: 4,
+    marginVertical: 10,
+  },
+  noticeText: {
+    fontSize: 12,
+    color: '#856404',
+    textAlign: 'center',
+  },
   totalSummary: {
-    marginTop: 30,
+    marginTop: 10,
     padding: 20,
     backgroundColor: '#f8f9fa',
     borderRadius: 8,
@@ -229,7 +303,7 @@ const styles = StyleSheet.create({
   cancelButton: {
     width: 45, 
     height: 24, 
-    backgroundColor: '#6c757d',
+    backgroundColor: '#dc3545',
     borderRadius: 4,
     justifyContent: 'center',
     alignItems: 'center',
@@ -238,5 +312,24 @@ const styles = StyleSheet.create({
     fontSize: 10, 
     color: '#fff',
     fontWeight: '600',
+  },
+  // ✅ 비활성화 버튼 스타일 추가
+  disabledButton: {
+    width: 45, 
+    height: 24, 
+    backgroundColor: '#e9ecef',
+    borderRadius: 4,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#dee2e6',
+  },
+  disabledButtonText: {
+    fontSize: 9, 
+    color: '#adb5bd',
+    fontWeight: '600',
+  },
+  scrollView: {
+    flex: 1,
   },
 });

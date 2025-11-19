@@ -10,7 +10,7 @@ import {
   Alert,
   ActivityIndicator,
 } from 'react-native';
-import { useLocalSearchParams } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import axios from 'axios';
 import * as SecureStore from 'expo-secure-store';
 import dayjs from 'dayjs';
@@ -40,6 +40,8 @@ const QnA = () => {
 
   // QNA 내용을 저장할 state 변수
   const [qnaContent, setQnaContent] = useState('');
+
+  const router = useRouter();
 
   // 로그인 정보 가져오기 (SecureStore 사용)
   useEffect(() => {
@@ -123,7 +125,14 @@ const QnA = () => {
           />
         ) : (
           <Text style={styles.loginRequiredText}>
-            상품문의는 로그인 후 이용가능합니다.
+            상품문의는{' '} 
+            <Text 
+              style={[styles.loginRequiredText, { textDecorationLine: 'underline' }]}
+              onPress={() => router.push('/auth/login')}
+            >
+              로그인
+            </Text>
+            {' '}후 이용가능합니다.
           </Text>
         )}
       </View>

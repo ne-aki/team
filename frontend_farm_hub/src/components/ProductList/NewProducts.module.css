@@ -44,3 +44,35 @@
   margin-bottom: 4px;
 }
 
+.price_container {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.original_price {
+  font-size: 14px;
+  color: #999;
+  text-decoration: line-through;
+}
+
+.discount_badge {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background-color: #ff4444;
+  color: white;
+  padding: 5px 10px;
+  border-radius: 5px;
+  font-weight: bold;
+  font-size: 14px;
+  z-index: 1;
+}
+
+.grid_img {
+  position: relative;
+}
+

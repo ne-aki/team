@@ -1,13 +1,16 @@
-import { StyleSheet, Text, TouchableOpacity, ScrollView, View } from 'react-native'
-import { router } from 'expo-router'
-import { colors } from '../constants/colorConstant'
+import { router, useSegments } from 'expo-router'
+import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
+import { colors } from '@/constants/colorConstant'
 
-const Menu = ({ activeMenu = 'new-product' }) => {
+const Menu = ({ activeMenu  }) => {
+  
+  const currentMenu = activeMenu 
+
   const menuItems = [
     { id: 'new-product', title: '신상품', path: '/product/new-product' },
     { id: 'popular-product', title: '인기상품', path: '/product/popular-product' },
     { id: 'discount-product', title: '할인상품', path: '/product/discount-product' },
-    { id: 'special', title: '기획전', path: '/product/special' },
+    { id: 'gift-set', title: '선물세트', path: '/product/gift-set' }, 
   ]
 
   return (
@@ -23,15 +26,15 @@ const Menu = ({ activeMenu = 'new-product' }) => {
             key={item.id}
             style={[
               styles.menuItem,
-              activeMenu === item.id && styles.activeMenuItem
+              currentMenu === item.id && styles.activeMenuItem
             ]}
             onPress={() => {
-              router.push(item.path)
+              router.replace(item.path)
             }}
           >
             <Text style={[
               styles.menuText,
-              activeMenu === item.id && styles.activeMenuText
+              currentMenu === item.id && styles.activeMenuText
             ]}>
               {item.title}
             </Text>

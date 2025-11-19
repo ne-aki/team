@@ -34,4 +34,17 @@ public class ItemService {
     return itemMapper.getItemDetail(itemNum);
   }
 
+  //할인 상품 목록 조회
+  public List<ItemDTO> getSaleItems() {
+    return itemMapper.getSaleItems();
+  }
+
+  //할인율 설정 (관리자)
+  public void updateDiscount(ItemDTO itemDTO) {
+    // 할인율 유효성 검사
+    if (itemDTO.getDiscountRate() < 0 || itemDTO.getDiscountRate() > 100) {
+      throw new IllegalArgumentException("할인율은 0~100 사이여야 합니다.");
+    }
+    itemMapper.updateDiscount(itemDTO);
+  }
 }

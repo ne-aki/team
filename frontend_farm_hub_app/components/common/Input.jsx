@@ -2,7 +2,7 @@ import { StyleSheet, Text, TextInput, View } from 'react-native'
 import React, { useState } from 'react'
 import { colors } from '../../constants/colorConstant';
 
-const Input = ({label='', isPw=false, containerStyle, ...props}) => { // containerStyle로 변경
+const Input = ({label='', isPw=false, containerStyle, ...props}) => {  
   const [focus, setFocus] = useState(false);
 
   return (

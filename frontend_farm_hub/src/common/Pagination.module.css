@@ -93,7 +93,7 @@ ul.pagination li.selected a,
 }
 
 /* Brown 테마 */
-.pagination.brown li a[aria-current="page"],
+/* .pagination.brown li a[aria-current="page"],
 .pagination.brown .selected a,
 .pagination.brown li.selected a {
   background-color: #8B4513 !important;
@@ -104,6 +104,19 @@ ul.pagination li.selected a,
 .pagination.brown .selected a:hover,
 .pagination.brown li.selected a:hover {
   background-color: #6B3410 !important;
+} */
+
+.pagination.brown li a[aria-current="page"],
+.pagination.brown .selected a,
+.pagination.brown li.selected a {
+  background-color: brown !important;
+  border-color: brown !important;
+}
+
+.pagination.brown li a[aria-current="page"]:hover,
+.pagination.brown .selected a:hover,
+.pagination.brown li.selected a:hover {
+  background-color: rgb(146, 40, 40) !important;
 }
 
 /* Red 테마 */

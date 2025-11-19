@@ -8,52 +8,120 @@ import { useNavigate } from 'react-router'
 
 const Dibs = () => {
   const nav = useNavigate();
-  //찜한 상품 목록을 저장할 state 변수
+  const loginData = sessionStorage.getItem('loginInfo');
   const [dibsList, setDibsList] = useState([]);
-
-  //체크된 아이템들을 저장할 state 변수 (아이템 번호 배열)
   const [checkedItems, setCheckedItems] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
 
-  //백엔드에서 불러온 찜한 상품을 dibsList에 저장
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const res = await axios.get('/api/dibs');
-        console.log(res.data);
-        setDibsList(res.data);
-      } catch (error) {
-        console.log(error);
-        alert(error.response.data);
-      }
-    }
-    fetchData();
-  }, [])
+    fetchDibsList();
+  }, []);
 
-  //전체 선택 체크박스 핸들러
+  const fetchDibsList = async () => {
+    try {
+      setIsLoading(true);
+      const memId = JSON.parse(loginData).memId;
+      const res = await axios.get(`/api/dibs?memId=${memId}`);
+      console.log('찜 목록:', res.data);
+      setDibsList(res.data);
+    } catch (error) {
+      console.error('데이터 로딩 오류:', error);
+      alert(error.response?.data || '데이터를 불러오지 못했습니다.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const handleSelectAll = (e) => {
     if (e.target.checked) {
-      // 모든 아이템의 번호를 배열에 추가
-      const allItemNums = dibsList.map(item => item.itemNum);
-      setCheckedItems(allItemNums);
+      const allDibsNums = dibsList.map(item => item.dibsNum);
+      setCheckedItems(allDibsNums);
     } else {
-      // 전체 해제
       setCheckedItems([]);
     }
   };
 
-  //개별 체크박스 핸들러
-  const handleCheckItem = (itemNum) => {
-    if (checkedItems.includes(itemNum)) {
-      // 이미 체크되어 있으면 제거
-      setCheckedItems(checkedItems.filter(num => num !== itemNum));
+  const handleCheckItem = (dibsNum) => {
+    if (checkedItems.includes(dibsNum)) {
+      setCheckedItems(checkedItems.filter(num => num !== dibsNum));
     } else {
-      // 체크되어 있지 않으면 추가
-      setCheckedItems([...checkedItems, itemNum]);
+      setCheckedItems([...checkedItems, dibsNum]);
     }
   };
 
-  //전체 선택 여부 확인
+  const removeSelectedList = async () => {
+    if (checkedItems.length === 0) {
+      alert('삭제할 항목을 선택해주세요.');
+      return;
+    }
+
+    const confirmDelete = window.confirm(
+      `선택한 ${checkedItems.length}개의 항목을 삭제하시겠습니까?`
+    );
+    if (!confirmDelete) return;
+
+    try {
+      const params = new URLSearchParams();
+      checkedItems.forEach(num => params.append('dibsNumList', num));
+
+      await axios.delete(`/api/dibs?${params.toString()}`);
+      alert('삭제되었습니다.');
+
+      await fetchDibsList();
+      setCheckedItems([]);
+    } catch (error) {
+      console.error('삭제 오류:', error);
+      alert(error.response?.data || '삭제에 실패했습니다.');
+    }
+  };
+
+  const insertCart = async (itemNum, itemName) => {
+    try {
+      await axios.post('/api/carts', {
+        itemNum: itemNum,
+        cartCnt: 1,
+        memId: JSON.parse(loginData).memId
+      });
+
+      alert(`"${itemName}"을(를) 장바구니에 담았습니다.`);
+    } catch (error) {
+      console.error('장바구니 담기 오류:', error);
+      alert(error.response?.data || '장바구니 담기에 실패했습니다.');
+    }
+  };
+
+  const removeSingleDib = async (dibsNum, itemName) => {
+    const confirmDelete = window.confirm(
+      `"${itemName}"을(를) 찜 목록에서 삭제하시겠습니까?`
+    );
+    if (!confirmDelete) return;
+
+    try {
+      await axios.delete(`/api/dibs/${dibsNum}`);
+      alert('삭제되었습니다.');
+
+      await fetchDibsList();
+      setCheckedItems([]);
+    } catch (error) {
+      console.error('삭제 오류:', error);
+      alert(error.response?.data || '삭제에 실패했습니다.');
+    }
+  };
+
   const isAllChecked = dibsList.length > 0 && checkedItems.length === dibsList.length;
+
+  if (isLoading) {
+    return (
+      <div className={styles.container}>
+        <PageTitle title='찜 리스트' />
+        <div className={styles.loading_container}>
+          <div className={styles.loading_spinner}></div>
+          <p className={styles.loading_text}>로딩 중...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className={styles.container}>
       <PageTitle title='찜 리스트' />
@@ -87,49 +155,62 @@ const Dibs = () => {
                 </tr>
               </thead>
               <tbody>
-                {
-                  dibsList.map((item, i) => {
-                    //이미지 찾기
-                    const imageUrl = `http://localhost:8080/upload/${item.itemDTO.imgList[0].attachedImgName}`
+                {dibsList.map((item) => {
+                  const imageUrl = `http://localhost:8080/upload/${item.itemDTO.imgList[0].attachedImgName}`;
 
-                    return (
-                      <tr key={i} className={styles.table_body_row}>
-                        <td className={styles.checkbox_cell}>
-                          <input
-                            type="checkbox"
-                            checked={checkedItems.includes(item.itemNum)}
-                            onChange={() => handleCheckItem(item.itemNum)}
+                  return (
+                    <tr key={item.dibsNum} className={styles.table_body_row}>
+                      <td className={styles.checkbox_cell}>
+                        <input
+                          type="checkbox"
+                          checked={checkedItems.includes(item.dibsNum)}
+                          onChange={() => handleCheckItem(item.dibsNum)}
+                        />
+                      </td>
+                      <td className={styles.image_cell}>
+                        {imageUrl ? (
+                          <img
+                            src={imageUrl}
+                            alt={item.itemDTO.itemName}
+                            className={styles.item_image}
+                            onError={(e) => e.target.src = '/placeholder-image.png'}
                           />
-                        </td>
-                        <td className={styles.image_cell}>
-                          {imageUrl ? (
-                            <img src={imageUrl} alt={item.itemDTO.itemName} className={styles.item_image} />
-                          ) : (
-                            <div className={styles.no_image}>no image</div>
-                          )}
-                        </td>
-                        <td className={styles.name_cell}>
-                          <span
-                            className={styles.item_name}
-                            onClick={event => nav(`/product-detail/${item.itemNum}/intro`)}
-                          >{item.itemDTO.itemName}</span>
-                        </td>
-                        <td className={styles.price_cell}>
-                          <span className={styles.item_price}>{item.itemDTO.price.toLocaleString()}원</span>
-                        </td>
-                        <td className={styles.date_cell}>
-                          {dayjs(item.dibsDate).format('YYYY년 MM월 DD일')}
-                        </td>
-                        <td className={styles.action_cell}>
-                          <div className={styles.button_group}>
-                            <Button title='장바구니' />
-                            <Button title='삭제' color='gray' />
-                          </div>
-                        </td>
-                      </tr>
-                    )
-                  })
-                }
+                        ) : (
+                          <div className={styles.no_image}>no image</div>
+                        )}
+                      </td>
+                      <td className={styles.name_cell}>
+                        <span
+                          className={styles.item_name}
+                          onClick={() => nav(`/product-detail/${item.itemNum}/intro`)}
+                        >
+                          {item.itemDTO.itemName}
+                        </span>
+                      </td>
+                      <td className={styles.price_cell}>
+                        <span className={styles.item_price}>
+                          {item.itemDTO.price.toLocaleString()}원
+                        </span>
+                      </td>
+                      <td className={styles.date_cell}>
+                        {dayjs(item.dibsDate).format('YYYY년 MM월 DD일')}
+                      </td>
+                      <td className={styles.action_cell}>
+                        <div className={styles.button_group}>
+                          <Button
+                            title='장바구니'
+                            onClick={() => insertCart(item.itemNum, item.itemDTO.itemName)}
+                          />
+                          <Button
+                            title='삭제'
+                            color='gray'
+                            onClick={() => removeSingleDib(item.dibsNum, item.itemDTO.itemName)}
+                          />
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
@@ -142,12 +223,13 @@ const Dibs = () => {
               title='선택 삭제'
               color='gray'
               size='150px'
+              onClick={removeSelectedList}
             />
           </div>
         </>
       )}
     </div>
-  )
-}
+  );
+};
 
-export default Dibs
+export default Dibs;

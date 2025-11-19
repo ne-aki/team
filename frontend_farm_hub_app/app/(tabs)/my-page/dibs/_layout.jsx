@@ -2,12 +2,16 @@ import { StyleSheet, Text, View } from 'react-native'
 import React from 'react'
 import { Stack } from 'expo-router'
 
-const SearchLayout = () => {
+const DibsLayout = () => {
   return (
-    <Stack screenOptions={{headerShown : false}}/>
+    <Stack
+      screenOptions={{
+        headerShown : false
+      }}
+    />
   )
 }
 
-export default SearchLayout
+export default DibsLayout
 
 const styles = StyleSheet.create({})

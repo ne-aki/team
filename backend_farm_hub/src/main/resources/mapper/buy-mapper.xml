@@ -98,4 +98,13 @@
         FROM SHOP_CART sc
         WHERE sc.CART_NUM = #{cartNum}
     </insert>
+
+    <!--    주문 취소-->
+    <delete id="deleteBuy">
+        DELETE FROM SHOP_BUY
+        WHERE BUY_NUM = #{buyNum}
+    </delete>
+
+
+
 </mapper>

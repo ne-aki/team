@@ -12,11 +12,11 @@ import {
 import * as SecureStore from 'expo-secure-store';
 import * as ImagePicker from 'expo-image-picker';
 import axios from 'axios';
-import Button from '../../../../../components/common/Button';
-import Input from '../../../../../components/common/Input';
-import Textarea from '../../../../../components/common/Textarea';
-import { SERVER_URL } from '../../../../../constants/appConst';
-import { colors } from '../../../../../constants/colorConstant';
+import Button from '@/components/common/Button';
+import Input from '@/components/common/Input';
+import Textarea from '@/components/common/Textarea';
+import { SERVER_URL } from '@/constants/appConst';
+import { colors } from '@/constants/colorConstant';
 
 const RegReview = ({ itemNum, isOpenRegReview, onClose }) => {
   // 로그인 정보
@@ -91,7 +91,6 @@ const RegReview = ({ itemNum, isOpenRegReview, onClose }) => {
       Alert.alert('오류', '이미지 선택에 실패했습니다.');
     }
   };
-
   // 리뷰 등록 (이미지 있음)
   const regNewReview = async () => {
     if (isSubmitting) return;
@@ -144,7 +143,7 @@ const RegReview = ({ itemNum, isOpenRegReview, onClose }) => {
       if (response.data.success) {
         Alert.alert('성공', response.data.message);
         resetForm();
-        onClose();
+        onClose(true); 
       } else {
         Alert.alert('실패', response.data.message);
         setIsSubmitting(false);
@@ -204,7 +203,7 @@ const RegReview = ({ itemNum, isOpenRegReview, onClose }) => {
       if (response.data.success) {
         Alert.alert('성공', response.data.message);
         resetForm();
-        onClose();
+        onClose(true);
       } else {
         Alert.alert('실패', response.data.message);
         setIsSubmitting(false);
@@ -228,7 +227,7 @@ const RegReview = ({ itemNum, isOpenRegReview, onClose }) => {
   const handleClose = () => {
     if (isSubmitting) return;
     resetForm();
-    onClose();
+    onClose(false); 
   };
 
   return (

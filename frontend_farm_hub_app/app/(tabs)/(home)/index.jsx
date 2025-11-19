@@ -1,4 +1,4 @@
-import { StyleSheet, Text, View } from 'react-native'
+import { Alert, Pressable, StyleSheet, Text, View } from 'react-native'
 import React, { useCallback, useEffect, useState } from 'react'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import {
@@ -10,11 +10,35 @@ import { Picker } from "@react-native-picker/picker";
 import axios from "axios";
 import dayjs from "dayjs";
 import { SERVER_URL } from '../../../constants/appConst';
-import { useFocusEffect } from 'expo-router';
+import { useFocusEffect, useRouter } from 'expo-router';
+import * as SecureStore from 'expo-secure-store';
+import { useAuth } from '@/app/contexts/AuthContext';
 
 const { width } = Dimensions.get("window");
 
 const HomeScreen = () => {
+  const router = useRouter();
+  const { logout } = useAuth();
+
+  // 관리자 로그아웃 함수 
+  const handleLogout = async () => {
+    Alert.alert('로그아웃', '로그아웃 하시겠습니까?', [
+      { text: '취소', style: 'cancel' },
+      {
+        text: '확인',
+        onPress: async () => {
+          try {
+            await logout(); 
+            router.replace('/(tabs)/product'); 
+          } catch (error) {
+            console.error('로그아웃 에러:', error);
+            Alert.alert('오류', '로그아웃에 실패했습니다.');
+          }
+        },
+      },
+    ]);
+  };
+
 
   // 축사 온도 데이터를 받을 state 변수
   const [temperatureData, setTemperatureData] = useState([]);
@@ -309,6 +333,12 @@ const HomeScreen = () => {
 
   return (
     <SafeAreaView style={styles.container}>
+      <View style={styles.accountSection}>
+        <Text>관리자님, 안녕하세요.{' '}{' '}</Text>       
+        <Pressable onPress={handleLogout}>
+          <Text style={{ textDecorationLine: 'underline' }}>로그아웃</Text>
+        </Pressable>
+      </View>
       <ScrollView contentContainerStyle={styles.scrollContent}>
         <View style={styles.sectionContainer}>
           <View style={styles.sectionHeader}>
@@ -779,5 +809,12 @@ const styles = StyleSheet.create({
     fontSize: 14,
     paddingVertical: 40,
     fontStyle: 'italic',
+  },
+  accountSection: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    alignItems: 'center',
+    marginRight: 25,
+    marginBottom: 10
   },
 })

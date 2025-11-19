@@ -46,6 +46,15 @@
   transition: all 1s;
 }
 
+.red {
+  background-color: #ef4444;
+}
+
+.red:hover {
+  background-color: #e98181;
+  transition: all 1s;
+}
+
 /* 비활성화 되었을 때  */
 .disabled{
   opacity: 0.5;

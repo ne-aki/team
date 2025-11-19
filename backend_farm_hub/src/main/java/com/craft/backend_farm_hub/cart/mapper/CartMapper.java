@@ -34,4 +34,4 @@ public interface CartMapper {
 
   //장바구니 구매 시 각 행의 장바구니 삭제
   public void deleteBoughtEach(int cartNum);
-}
+} 

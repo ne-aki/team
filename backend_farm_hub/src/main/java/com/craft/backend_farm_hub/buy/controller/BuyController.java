@@ -99,4 +99,22 @@ public class BuyController {
               .body("상품을 구매하는 중 오류가 발생하였습니다.\n관리자에게 문의해 주세요.");
     }
   }
+
+  //주문취소
+  @DeleteMapping("/{buyNum}")
+  public ResponseEntity<?> deleteCart(
+          @PathVariable("buyNum") int buyNum
+  ) {
+    try {
+      buyService.deleteBuy(buyNum);
+      return ResponseEntity
+              .status(HttpStatus.OK)
+              .build();
+    } catch (Exception e) {
+      e.printStackTrace();
+      return ResponseEntity
+              .status(HttpStatus.INTERNAL_SERVER_ERROR)
+              .body("취소 중 오류가 발생하였습니다.\n관리자에게 문의해 주세요.");
+    }
+  }
 }

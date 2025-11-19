@@ -11,11 +11,12 @@ import { TouchableWithoutFeedback } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Picker } from '@react-native-picker/picker';
 import { colors } from '@/constants/colorConstant';
+import handleErrorMsg from '@/validate/joinValidate'
 
 const ProfileEditPage = () => {
   const router = useRouter(); 
   const [userInfo, setUserInfo] = useState(null);
-  const [update, setUpdate] = useState(0);
+  const [isLoading, setIsLoading] = useState(true);
   
   // 로그인 정보 가져오기
   useEffect(() => {
@@ -59,25 +60,33 @@ const ProfileEditPage = () => {
     
     const fetchProfileList = async () => {
       try {
+        setIsLoading(true);
         const res = await axios.get(`${SERVER_URL}/members/select/${userInfo.memId}`);        
         console.log(res.data);
-        // 연락처와 이메일을 분리하여 state에 저장
-        const phone = res.data.memTel.split("-");
-        const email = res.data.memEmail.split("@");
+        
+        const phone = res.data.memTel?.split("-") || ["", "", ""]; 
+        const email = res.data.memEmail?.split("@") || ["", ""];   
 
         setSelectMember({
-          ...res.data,
-          memTel: phone,
-          firstEmail: email[0],
-          secondEmail: "@" + email[1],
+          memName: res.data.memName || "",
+          memPw: "",
           confirmPw: "",
-        });      
+          memTel: phone.length === 3 ? phone : ["", "", ""],
+          memAddr: res.data.memAddr || "",
+          addrDetail: res.data.addrDetail || "",
+          memEmail: res.data.memEmail || "",
+          firstEmail: email[0] || "",
+          secondEmail: email[1] ? "@" + email[1] : "",
+        });   
       } catch (error) {
         console.error('에러:', error);
+        Alert.alert('오류', '회원 정보를 불러오는데 실패했습니다.');
+      } finally {
+        setIsLoading(false);  
       }
     };
     fetchProfileList();
-  }, [userInfo, update]);
+  }, [userInfo]); 
 
   // 유효성 검사 결과 에러 메세지를 출력할 state 변수
   const [errorMsg, setErrorMsg] = useState({
@@ -88,60 +97,20 @@ const ProfileEditPage = () => {
     memAddr: "",
   });
 
-  // 각 필드별 실시간 검증 함수
-  const validateField = (name, value) => {
-    let error = "";
-
-    switch (name) {
-      case "memPw":
-        if (!value) {
-          error = "비밀번호를 입력해주세요.";
-        } else if (value.length < 8 || value.length > 12) {
-          error = "비밀번호는 8-12자 사이여야 합니다.";
-        } else if (!/^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]+$/.test(value)) {
-          error = "영문과 숫자를 모두 포함해야 합니다.";
-        }
-        break;
-
-      case "confirmPw":
-        if (!value) {
-          error = "비밀번호 확인을 입력해주세요.";
-        } else if (value !== selectMember.memPw) {
-          error = "비밀번호가 일치하지 않습니다.";
-        }
-        break;
-
-      case "firstEmail":
-        if (!value) {
-          error = "이메일을 입력해주세요.";
-        }
-        break;
-
-      case "secondEmail":
-        if (!value) {
-          error = "이메일 도메인을 선택해주세요.";
-        }
-        break;
-
-      default:
-        break;
-    }
-
-    return error;
-  };
-
   // onChange 핸들러 - 일반 input
   const handleInputChange = (name, value) => {
     setSelectMember({ ...selectMember, [name]: value });
 
-    // 실시간 검증
-    const error = validateField(name, value);
+    // handleErrorMsg 사용 (✅ 통일)
+    const error = handleErrorMsg(name, value, selectMember);
     setErrorMsg({ ...errorMsg, [name]: error });
 
     // 비밀번호 변경 시 confirmPw도 다시 검증
     if (name === 'memPw' && selectMember.confirmPw) {
-      const confirmError =
-        value !== selectMember.confirmPw ? '비밀번호가 일치하지 않습니다.' : '';
+      const confirmError = handleErrorMsg('confirmPw', selectMember.confirmPw, {
+        ...selectMember,
+        memPw: value
+      });
       setErrorMsg((prev) => ({
         ...prev,
         memPw: error,
@@ -179,22 +148,20 @@ const ProfileEditPage = () => {
   };
 
   // 확인 버튼
-  const handleConfirm = () => {
-    // 최종 유효성 검사
+    const handleConfirm = () => {
     const errors = {};
 
-    if (!selectMember.memPw) {
-      errors.memPw = '비밀번호를 입력해주세요.';
-    }
-    if (!selectMember.confirmPw) {
-      errors.confirmPw = '비밀번호 확인을 입력해주세요.';
-    }
-    if (selectMember.memPw !== selectMember.confirmPw) {
-      errors.confirmPw = '비밀번호가 일치하지 않습니다.';
-    }
+    // handleErrorMsg 사용 (✅ 통일)
+    const memPwError = handleErrorMsg('memPw', selectMember.memPw, selectMember);
+    if (memPwError) errors.memPw = memPwError;
+
+    const confirmPwError = handleErrorMsg('confirmPw', selectMember.confirmPw, selectMember);
+    if (confirmPwError) errors.confirmPw = confirmPwError;
+
     if (selectMember.memTel.some((part) => part === '')) {
       errors.memTel = '연락처를 모두 입력해주세요.';
     }
+    
     if (!selectMember.firstEmail || !selectMember.secondEmail) {
       errors.memEmail = '이메일을 입력해주세요.';
     }
@@ -227,9 +194,19 @@ const ProfileEditPage = () => {
       })
       .catch((error) => {
         console.log('수정 실패:', error);
-        Alert.alert('오류', '회원정보 수정에 실패했습니다.');
+        Alert.alert('오류', error.response?.data?.message || '회원정보 수정에 실패했습니다.');
       });
   };
+
+  if (!userInfo || isLoading) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+          <Text>로딩중...</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
@@ -238,11 +215,11 @@ const ProfileEditPage = () => {
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
           style={{ flex: 1 }}
         >
-          <ScrollView style={styles.scrollView}>
-            <PageTitle title="나의 정보" />
+          <View style={styles.scrollView}>
 
             {/* 안내 문구 */}
             <View style={styles.header}>
+            <PageTitle title="나의 정보" />
               <Text style={styles.headerText}>
                 안전한 배송 안내를 위하여 연락처와 이메일 주소를 필히 확인 부탁드립니다.
               </Text>
@@ -250,7 +227,7 @@ const ProfileEditPage = () => {
             </View>
 
             {/* 회원 정보 폼 */}
-            <View style={styles.formContainer}>
+            <ScrollView style={styles.formContainer}>
               {/* 이름 */}
               <View style={styles.row}>
                 <Text style={styles.label}>이름</Text>
@@ -269,13 +246,13 @@ const ProfileEditPage = () => {
                 <View style={styles.inputWrapper}>
                   <Input
                     name="memPw"
-                    value={selectMember.memPw}
+                    value={String(selectMember.memPw || "")}
                     onChangeText={(text) => handleInputChange('memPw', text)}
                     placeholder="비밀번호 입력"
                     isPw={true}
                   />
-                  <Text style={styles.hint}>영문과 숫자 12자리 이하만 가능합니다.</Text>
-                  {errorMsg.memPw && <Text style={styles.errorText}>{errorMsg.memPw}</Text>}
+                  <Text style={styles.hint}>영문과 숫자 6-12자리 입력해주세요.</Text>
+                  {errorMsg.memPw ? <Text style={styles.errorText}>{errorMsg.memPw}</Text> : null}
                 </View>
               </View>
 
@@ -285,13 +262,13 @@ const ProfileEditPage = () => {
                 <View style={styles.inputWrapper}>
                   <Input
                     name="confirmPw"
-                    value={selectMember.confirmPw}
+                    value={String(selectMember.confirmPw || "")}
                     onChangeText={(text) => handleInputChange('confirmPw', text)}
                     placeholder="비밀번호 재입력"
                     isPw={true}
                   />
                   <Text style={styles.hint}>비밀번호를 한번 더 입력해주세요.</Text>
-                  {errorMsg.confirmPw && <Text style={styles.errorText}>{errorMsg.confirmPw}</Text>}
+                  {errorMsg.confirmPw ? <Text style={styles.errorText}>{errorMsg.confirmPw}</Text> : null}
                 </View>
               </View>
 
@@ -302,7 +279,7 @@ const ProfileEditPage = () => {
                   <View style={styles.telContainer}>
                     <Input
                       containerStyle={{ flex: 1 }}
-                      value={selectMember.memTel[0]}
+                      value={String(selectMember.memTel[0] || "")}
                       onChangeText={(text) => handleTelChange(0, text)}
                       placeholder="010"
                       keyboardType="number-pad"
@@ -311,7 +288,7 @@ const ProfileEditPage = () => {
                     <Text style={styles.dash}>-</Text>
                     <Input
                       containerStyle={{ flex: 1 }}
-                      value={selectMember.memTel[1]}
+                      value={String(selectMember.memTel[1] || "")}
                       onChangeText={(text) => handleTelChange(1, text)}
                       placeholder="1234"
                       keyboardType="number-pad"
@@ -320,7 +297,7 @@ const ProfileEditPage = () => {
                     <Text style={styles.dash}>-</Text>
                     <Input
                       containerStyle={{ flex: 1 }}
-                      value={selectMember.memTel[2]}
+                      value={String(selectMember.memTel[2] || "")}
                       onChangeText={(text) => handleTelChange(2, text)}
                       placeholder="5678"
                       keyboardType="number-pad"
@@ -328,7 +305,7 @@ const ProfileEditPage = () => {
                     />
                   </View>
                   <Text style={styles.hint}>숫자만 입력 가능합니다.</Text>
-                  {errorMsg.memTel && <Text style={styles.errorText}>{errorMsg.memTel}</Text>}
+                  {errorMsg.memTel ? <Text style={styles.errorText}>{errorMsg.memTel}</Text> : null}
                 </View>
               </View>
 
@@ -340,16 +317,15 @@ const ProfileEditPage = () => {
                     <Input
                       containerStyle={{ flex: 1.2 }}
                       name="firstEmail"
-                      value={selectMember.firstEmail}
+                      value={String(selectMember.firstEmail || "")}
                       onChangeText={(text) => handleInputChange('firstEmail', text)}
                       placeholder="이메일"
                     />
                     <Text style={styles.at}>@</Text>
                     <View style={styles.pickerContainer}>
                       <Picker
-                        selectedValue={selectMember.secondEmail}
-                        onValueChange={(value) => handleInputChange('secondEmail', value)}
-                        style={styles.picker}
+                        selectedValue={String(selectMember.secondEmail || "")}
+                        onValueChange={(value) => handleInputChange('secondEmail', value)}                        
                       >
                         <Picker.Item label="선택" value="" />
                         <Picker.Item label="gmail.com" value="@gmail.com" />
@@ -358,7 +334,7 @@ const ProfileEditPage = () => {
                       </Picker>
                     </View>
                   </View>
-                  {errorMsg.memEmail && <Text style={styles.errorText}>{errorMsg.memEmail}</Text>}
+                  {errorMsg.memEmail ? <Text style={styles.errorText}>{errorMsg.memEmail}</Text> : null}
                 </View>
               </View>
 
@@ -369,7 +345,7 @@ const ProfileEditPage = () => {
                   <View style={styles.addressContainer}>
                     <Input
                       style={styles.addressInput}
-                      value={selectMember.memAddr}
+                      value={String(selectMember.memAddr || "")}
                       placeholder="주소 검색"
                       editable={false}
                     />
@@ -388,13 +364,13 @@ const ProfileEditPage = () => {
                 <View style={styles.inputWrapper}>
                   <Input
                     name="addrDetail"
-                    value={selectMember.addrDetail}
+                    value={String(selectMember.addrDetail || "")}
                     onChangeText={(text) => handleInputChange('addrDetail', text)}
                     placeholder="상세주소 입력"
                   />
                 </View>
               </View>
-            </View>
+            </ScrollView>
 
             {/* 버튼 */}
             <View style={styles.buttonContainer}>
@@ -405,7 +381,7 @@ const ProfileEditPage = () => {
                 <Button title="확인" onPress={handleConfirm} />
               </View>
             </View>
-          </ScrollView>
+          </View>
         </KeyboardAvoidingView>
       </SafeAreaView>
     </TouchableWithoutFeedback>
@@ -424,8 +400,8 @@ const styles = StyleSheet.create({
     padding: 20,
   },
   header: {
-    marginBottom: 20,
-    paddingBottom: 16,
+    marginBottom: 0,
+    paddingBottom: 7,
     borderBottomWidth: 1,
     borderBottomColor: '#eee',
   },
@@ -530,4 +506,5 @@ const styles = StyleSheet.create({
   buttonWrapper: {
     flex: 1,
   },
+  
 });

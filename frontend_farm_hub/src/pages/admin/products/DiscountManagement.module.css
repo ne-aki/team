@@ -1,0 +1,73 @@
+.container {
+  padding: 20px;
+  height: 100%;
+  overflow-y: auto;
+}
+
+.search_area {
+  margin-bottom: 10px;
+}
+
+.table_container {
+  overflow-x: auto;
+  overflow-y: auto;
+  max-height: calc(100vh - 200px);
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.product_table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.product_table thead {
+  background-color: #f8f9fa;
+}
+
+.product_table th {
+  padding: 15px;
+  text-align: center;
+  border-bottom: 2px solid #dee2e6;
+  font-weight: 600;
+  color: #495057;
+}
+
+.product_table td {
+  padding: 15px;
+  text-align: center;
+  border-bottom: 1px solid #dee2e6;
+  vertical-align: middle;
+}
+
+.product_table tbody tr:hover {
+  background-color: #f8f9fa;
+}
+
+.product_img {
+  width: 60px;
+  height: 60px;
+  object-fit: cover;
+  border-radius: 5px;
+}
+
+.discount_input {
+  width: 70px;
+  padding: 5px;
+  text-align: center;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 14px;
+}
+
+.discount_input:focus {
+  outline: none;
+  border-color: #007bff;
+}
+
+.checkbox {
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+}

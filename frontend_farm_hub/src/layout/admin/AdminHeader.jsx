@@ -19,6 +19,7 @@ const AdminHeader = () => {
         <div className={styles.body}>
           <ul>
             <li>관리자님, 안녕하세요.</li>
+            <li onClick={e => nav('/')}>유저페이지</li>
             <li onClick={e => {sessionStorage.removeItem('loginInfo'); nav(`/`);}}>로그아웃</li>
           </ul>
         </div>

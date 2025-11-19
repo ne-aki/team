@@ -79,10 +79,21 @@ const AdminSide = () => {
               </p>
             </NavLink>
           </li>
-          {/* <li>
-            <span><i className="bi bi-bag-check-fill"></i></span>
-            상품관리
-          </li> */}
+          <li>
+            <NavLink
+              to={"discount-management"}
+              className={({ isActive }) =>
+                isActive ? styles.active : undefined
+              }
+            >
+              <p>
+                <span>
+                  <i class="fa-solid fa-tags"></i>
+                </span>
+                할인 관리
+              </p>
+            </NavLink>
+          </li>
         </ul>
       </div>
       <div className={styles.category}>

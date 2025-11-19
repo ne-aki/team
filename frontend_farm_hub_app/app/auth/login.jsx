@@ -17,7 +17,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-const login = () => {
+const Login = () => {
   const router = useRouter();
 
   // 로그인 정보
@@ -27,6 +27,10 @@ const login = () => {
   });
 
   const loginNow = async () => {
+    if (!loginData.memId.trim() || !loginData.memPw.trim()) {
+      Alert.alert('알림', '아이디와 비밀번호를 입력해주세요');
+      return;
+    }
     try {
       const res = await axios.get(`${SERVER_URL}/members/login`, {
         params: loginData,
@@ -91,26 +95,12 @@ const login = () => {
     }
   };
 
-  // 로그아웃 함수
-  const logout = async () => {
-    // SecureStore에 저장된 로그인 정보 삭제
-    await SecureStore.deleteItemAsync("loginInfo");
-
-    // 모든 스택 제거
-    if (router.canDismiss()) {
-      router.dismissAll();
-    }
-
-    // 첫 페이지로 이동
-    router.replace("/product");
-  };
-
   return (
     <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
       <SafeAreaView style={styles.container}>
         <PageTitle title="로그인" />
         <View style={styles.content}>
-          <View>
+          <View style={{ marginBottom: 13}}>
             <Input
               name="memId"
               value={loginData.memId}
@@ -119,14 +109,13 @@ const login = () => {
               onChangeText={(text) => {
                 setLoginData({ ...loginData, memId: text });
               }}
-              onSubmitEditing={() => {}}
               returnKeyType="next"
               autoCapitalize="none"
               autoCorrect={false}
             />
           </View>
 
-          <View style={{ marginBottom: 12 }}>
+          <View style={{ marginBottom: 9 }}>
             <Input
               name="memPw"
               value={loginData.memPw}
@@ -143,7 +132,7 @@ const login = () => {
             />
           </View>
 
-          <View style={{ marginBottom: 8 }}>
+          <View style={{ marginBottom: 7 }}>
             <Button onPress={loginNow} title="로그인" />
           </View>
 
@@ -185,7 +174,7 @@ const login = () => {
     </TouchableWithoutFeedback>
   );
 };
-export default login;
+export default Login;
 
 const styles = StyleSheet.create({
   container: {
@@ -197,7 +186,8 @@ const styles = StyleSheet.create({
   content: {
     paddingRight: 15,
     paddingLeft: 15,
-    marginTop: 10,
+    marginTop: 11,
+
   },
   joinLink: {
     alignItems: "flex-end",

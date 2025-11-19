@@ -25,4 +25,10 @@ public interface ItemMapper {
 
   //상품 상세 조회
   public ItemDTO getItemDetail(int itemNum);
+
+  //할인 상품 목록 조회
+  public List<ItemDTO> getSaleItems();
+
+  //할인율 설정 (관리자)
+  public void updateDiscount(ItemDTO itemDTO);
 }

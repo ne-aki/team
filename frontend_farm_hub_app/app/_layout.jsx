@@ -1,11 +1,17 @@
-import { StyleSheet, Text, View } from 'react-native'
+import { StyleSheet } from 'react-native'
 import React from 'react'
 import { Stack } from 'expo-router'
+import { AuthProvider } from './contexts/AuthContext' 
 
-//app의 폴더들을 stack 구조로 정의하는 파일
 const RootLayout = () => {
   return (
-    <Stack screenOptions={{headerShown : false}}/>
+    <AuthProvider>
+      <Stack screenOptions={{ headerShown: false }}>
+        <Stack.Screen name="index" />
+        <Stack.Screen name="(tabs)" />
+        <Stack.Screen name="auth" />
+      </Stack>
+    </AuthProvider>
   )
 }
 
