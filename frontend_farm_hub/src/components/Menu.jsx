@@ -31,8 +31,11 @@ const Menu = () => {
           </NavLink>
         </li>
         <li>
-          <NavLink>
-            <p>기획전</p>
+          <NavLink
+            to={"/gift-set"}
+            className={({ isActive }) => (isActive ? styles.active : undefined)}
+          >
+            <p>선물세트</p>
           </NavLink>
         </li>
       </ul>

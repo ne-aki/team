@@ -1,8 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 
-<!-- 해당 파일에 모든 쿼리문을 작성 -->
-<!-- namespace에는 xml파일과 연결할 Mapper interface 파일명을 패키지를 포함하여 적어주세요 -->
 <mapper namespace="com.craft.backend_farm_hub.item.mapper.ItemMapper">
     <resultMap id="items" type="com.craft.backend_farm_hub.item.dto.ItemDTO">
         <id column="ITEM_NUM" property="itemNum" />
@@ -13,10 +11,12 @@
         <result column="REVIEW_AVG" property="reviewAvg" />
         <result column="ORIGIN" property="origin" />
         <result column="REG_DATE" property="regDate" />
-        <!--판매자(임시)-->
         <result column="SELLER" property="seller" />
         <result column="REVIEW_CNT" property="reviewCnt"/>
-        <!--상품 하나에 이미지는 여러개-->
+        <result column="DISCOUNT_RATE" property="discountRate"/>
+        <result column="IS_ON_SALE" property="isOnSale"/>
+        <result column="IS_GIFT_SET" property="isGiftSet"/>
+        <result column="ITEM_STATUS" property="itemStatus"/>
         <collection property="imgList" resultMap="itemImg" />
     </resultMap>
 
@@ -28,15 +28,15 @@
         <result column="IS_MAIN" property="isMain" />
     </resultMap>
 
-<!--    상품 등록-->
+    <!-- 상품 등록 -->
     <insert id="insertItem">
         INSERT INTO ITEM(
-        ITEM_NUM, ITEM_NAME, PRICE, ITEM_INTRO, PART, ORIGIN
+        ITEM_NUM, ITEM_NAME, PRICE, ITEM_INTRO, PART, ORIGIN, IS_GIFT_SET, ITEM_STATUS
         )
-        VALUES(#{itemNum}, #{itemName}, #{price}, #{itemIntro}, #{part}, #{origin})
+        VALUES(#{itemNum}, #{itemName}, #{price}, #{itemIntro}, #{part}, #{origin}, #{isGiftSet}, 'ACTIVE')
     </insert>
 
-<!--    상품 이미지 등록-->
+    <!-- 상품 이미지 등록 -->
     <insert id="insertImgs">
         INSERT INTO ITEM_IMG(ORIGIN_IMG_NAME, ATTACHED_IMG_NAME, ITEM_NUM, IS_MAIN)
         VALUES
@@ -45,12 +45,12 @@
         </foreach>
     </insert>
 
-<!--    item 테이블에 데이터 삽입 시 저장되는 ITEM_NUM을 조회하는 쿼리-->
+    <!-- item 테이블에 데이터 삽입 시 저장되는 ITEM_NUM을 조회하는 쿼리 -->
     <select id="getNextItemNum" resultType="int">
         SELECT IFNULL(MAX(ITEM_NUM), 0) +1 FROM ITEM
     </select>
 
-    <!--신상품 목록 조회-->
+    <!-- 신상품 목록 조회 (활성 상품만) -->
     <select id="getItemList" resultMap="items">
         SELECT
         ITEM.ITEM_NUM
@@ -60,6 +60,124 @@
         , REG_DATE
         , REVIEW_AVG
         , COALESCE(REVIEW_CNT, 0) AS REVIEW_CNT
+        , DISCOUNT_RATE
+        , IS_ON_SALE
+        , IS_GIFT_SET
+        , ITEM_STATUS
+        , (
+        SELECT MEM_NAME
+        FROM SHOP_MEMBER
+        WHERE MEM_ROLE = 'ADMIN'
+        AND MEM_ID = 'admin'
+        ) SELLER
+        FROM item INNER JOIN item_img IMG
+        ON item.ITEM_NUM = IMG.ITEM_NUM
+        LEFT JOIN (
+        SELECT
+        ITEM_NUM,
+        COUNT(*) AS REVIEW_CNT
+        FROM review
+        GROUP BY ITEM_NUM
+        ) R ON ITEM.ITEM_NUM = R.ITEM_NUM
+        WHERE IS_MAIN = 'Y'
+        AND ITEM_STATUS = 'ACTIVE'
+        ORDER BY REG_DATE DESC
+    </select>
+
+    <!-- 상품 상세 조회 -->
+    <select id="getItemDetail" resultMap="items">
+        SELECT
+        ITEM.ITEM_NUM
+        , ITEM_NAME
+        , PRICE
+        , PART
+        , ORIGIN
+        , ATTACHED_IMG_NAME
+        , IS_MAIN
+        , ITEM_INTRO
+        , REG_DATE
+        , REVIEW_AVG
+        , DISCOUNT_RATE
+        , IS_ON_SALE
+        , IS_GIFT_SET
+        , ITEM_STATUS
+        , (
+        SELECT MEM_NAME
+        FROM SHOP_MEMBER
+        WHERE MEM_ROLE = 'ADMIN'
+        AND MEM_ID = 'admin'
+        ) SELLER
+        FROM item INNER JOIN item_img IMG
+        ON item.ITEM_NUM = IMG.ITEM_NUM
+        WHERE item.ITEM_NUM = #{itemNum}
+        <!-- 상세조회는 삭제된 것도 볼 수 있게 (구매내역 등에서 필요) -->
+    </select>
+
+    <!-- 할인 상품 목록 조회 (활성 상품만) -->
+    <select id="getSaleItems" resultMap="items">
+        SELECT
+        ITEM.ITEM_NUM
+        , ITEM_NAME
+        , PRICE
+        , ATTACHED_IMG_NAME
+        , REG_DATE
+        , REVIEW_AVG
+        , DISCOUNT_RATE
+        , IS_ON_SALE
+        , IS_GIFT_SET
+        , ITEM_STATUS
+        , COALESCE(REVIEW_CNT, 0) AS REVIEW_CNT
+        , (
+        SELECT MEM_NAME
+        FROM SHOP_MEMBER
+        WHERE MEM_ROLE = 'ADMIN'
+        AND MEM_ID = 'admin'
+        ) SELLER
+        FROM item INNER JOIN item_img IMG
+        ON item.ITEM_NUM = IMG.ITEM_NUM
+        LEFT JOIN (
+        SELECT
+        ITEM_NUM,
+        COUNT(*) AS REVIEW_CNT
+        FROM review
+        GROUP BY ITEM_NUM
+        ) R ON ITEM.ITEM_NUM = R.ITEM_NUM
+        WHERE IS_MAIN = 'Y'
+        AND IS_ON_SALE = TRUE
+        AND DISCOUNT_RATE > 0
+        AND ITEM_STATUS = 'ACTIVE'
+        ORDER BY DISCOUNT_RATE DESC, REG_DATE DESC
+    </select>
+
+    <!-- 할인율 설정 (관리자) -->
+    <update id="updateDiscount">
+        UPDATE ITEM
+        SET DISCOUNT_RATE = #{discountRate},
+        IS_ON_SALE = #{isOnSale}
+        WHERE ITEM_NUM = #{itemNum}
+    </update>
+
+    <!-- 상품 삭제 (Soft Delete) -->
+    <update id="deleteItem">
+        UPDATE ITEM
+        SET ITEM_STATUS = 'DELETED'
+        WHERE ITEM_NUM = #{itemNum}
+    </update>
+
+    <!-- 전체 상품 조회 (삭제된 것 포함) -->
+    <select id="getAllItemList" resultMap="items">
+        SELECT
+        ITEM.ITEM_NUM
+        , ITEM_NAME
+        , PRICE
+        , ATTACHED_IMG_NAME
+        , REG_DATE
+        , REVIEW_AVG
+        , COALESCE(REVIEW_CNT, 0) AS REVIEW_CNT
+        , DISCOUNT_RATE
+        , IS_ON_SALE
+        , IS_GIFT_SET
+        , ITEM_STATUS
         , (
         SELECT MEM_NAME
         FROM SHOP_MEMBER
@@ -79,28 +197,10 @@
         ORDER BY REG_DATE DESC
     </select>
 
-    <!--상품 상세 조회-->
-    <select id="getItemDetail" resultMap="items">
-        SELECT
-            ITEM.ITEM_NUM
-            , ITEM_NAME
-            , PRICE
-            , PART
-            , ORIGIN
-            , ATTACHED_IMG_NAME
-            , IS_MAIN
-            , ITEM_INTRO
-            , REG_DATE
-            , REVIEW_AVG
-        <!--판매자이름(임시로 관리자 이름으로 지정해 놓음)-->
-            , (
-                SELECT MEM_NAME
-                FROM SHOP_MEMBER
-                WHERE MEM_ROLE = 'ADMIN'
-                AND MEM_ID = 'admin'
-            ) SELLER
-        FROM item INNER JOIN item_img IMG
-        ON item.ITEM_NUM = IMG.ITEM_NUM
-        WHERE item.ITEM_NUM = #{itemNum}
-    </select>
+    <!-- 상품 복구 (관리자) -->
+    <update id="restoreItem">
+        UPDATE ITEM
+        SET ITEM_STATUS = 'ACTIVE'
+        WHERE ITEM_NUM = #{itemNum}
+    </update>
 </mapper>

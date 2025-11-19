@@ -79,5 +79,44 @@ public class ItemController {
     }
   }
 
+  //할인 상품 목록 조회 api
+  @GetMapping("/on-sale")
+  public ResponseEntity<?> getSaleItems() {
+    try {
+      List<ItemDTO> saleItems = itemService.getSaleItems();
+      return ResponseEntity
+              .status(HttpStatus.OK)
+              .body(saleItems);
+    } catch (Exception e) {
+      e.printStackTrace();
+      return ResponseEntity
+              .status(HttpStatus.INTERNAL_SERVER_ERROR)
+              .body("할인 상품 조회 중 오류가 발생했습니다.");
+    }
+  }
+
+  //할인율 설정 api (관리자)
+  @PutMapping("/{itemNum}/discount")
+  public ResponseEntity<?> updateDiscount(
+          @PathVariable("itemNum") int itemNum,
+          @RequestBody ItemDTO itemDTO
+  ) {
+    try {
+      itemDTO.setItemNum(itemNum);
+      itemService.updateDiscount(itemDTO);
+      return ResponseEntity
+              .status(HttpStatus.OK)
+              .body("할인 설정이 완료되었습니다.");
+    } catch (IllegalArgumentException e) {
+      return ResponseEntity
+              .status(HttpStatus.BAD_REQUEST)
+              .body(e.getMessage());
+    } catch (Exception e) {
+      e.printStackTrace();
+      return ResponseEntity
+              .status(HttpStatus.INTERNAL_SERVER_ERROR)
+              .body("할인 설정 중 오류가 발생했습니다.");
+    }
+  }
 
 }

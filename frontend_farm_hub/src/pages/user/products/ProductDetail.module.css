@@ -99,3 +99,38 @@
 .main_info_table td:first-child {
   font-weight: bold;
 }
+
+.price_info {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.discount_badge_detail {
+  display: inline-block;
+  background-color: #ff4444;
+  color: white;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-weight: bold;
+  font-size: 0.9rem;
+  width: fit-content;
+}
+
+.price_container_detail {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.original_price_detail {
+  font-size: 1rem;
+  color: #999;
+  text-decoration: line-through;
+}
+
+.discount_price_detail {
+  font-size: 1.4rem;
+  color: #ff4444;
+  font-weight: bold;
+}

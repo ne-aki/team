@@ -22,6 +22,8 @@ const UserHeader = () => {
   // 비밀번호 찾기 Modal 창 숨김/보이기 여부
   const [isOpenForgotPw, setIsOpenForgotPw] = useState(false);
 
+  console.log(loginInfoData)
+
   return (
     <div className={styles.container}>
       <div className={styles.members}>
@@ -31,6 +33,16 @@ const UserHeader = () => {
               <li>
                 <span>{loginInfoData.memId}님 환영합니다</span>
               </li>
+              {/* 관리자인 경우에만 관리자페이지 링크 표시 */}
+              {loginInfoData.memRole === 'ADMIN' && (
+                <li
+                  onClick={(e) => {
+                    nav("/admin");
+                  }}
+                >
+                  관리자페이지
+                </li>
+              )}
               <li
                 onClick={(e) => {
                   nav("/mypage");
@@ -57,7 +69,7 @@ const UserHeader = () => {
         </ul>
       </div>
       <div className={styles.search}>
-        <div className={styles.img_div} onClick={(e) => nav("/")}>          
+        <div className={styles.img_div} onClick={(e) => nav("/")}>
           <img className={styles.banner_img} src="/header0.png"/>
         </div>
       </div>

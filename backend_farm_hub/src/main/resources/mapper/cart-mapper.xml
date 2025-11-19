@@ -25,11 +25,11 @@
             #{itemNum}
             , #{cartCnt}
             , #{memId}
-            , (
+            , IFNULL((
                 SELECT PRICE
                 FROM ITEM
                 WHERE ITEM_NUM = #{itemNum}
-            ) * #{cartCnt}
+            ), 0) * #{cartCnt}
         )
     </insert>
     <!--카트에 담은 상품이 중복인지 조회-->
@@ -44,12 +44,12 @@
         UPDATE SHOP_CART
         SET
             CART_CNT = CART_CNT + #{cartCnt}
-            , TOTAL_PRICE = (
-                (
+            , TOTAL_PRICE = TOTAL_PRICE + (
+                IFNULL((
                     SELECT PRICE
                     FROM ITEM
                     WHERE ITEM_NUM = #{itemNum}
-                ) * #{cartCnt}
+                ), 0) * #{cartCnt}
             )
         WHERE MEM_ID = #{memId}
         AND ITEM_NUM = #{itemNum}
@@ -77,10 +77,10 @@
         UPDATE shop_cart
         SET
             CART_CNT = #{cartCnt}
-            , TOTAL_PRICE = (SELECT PRICE
+            , TOTAL_PRICE = IFNULL((SELECT PRICE
                             FROM ITEM
                             WHERE ITEM_NUM = #{itemNum}
-                            ) * CART_CNT
+                            ), 0) * #{cartCnt}
         WHERE MEM_ID = #{memId}
         AND ITEM_NUM = #{itemNum}
     </update>

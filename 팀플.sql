@@ -96,7 +96,7 @@ CREATE TABLE PAYMENT (
 );
  
  #상품 이미지 테이블
- CREATE TABLE ITEM_IMG (
+ CREATE TABLE ITEM_itemIMG (
  	IMG_NUM INT PRIMARY KEY AUTO_INCREMENT
 	, ORIGIN_IMG_NAME VARCHAR(100) #원본 파일명
 	, ATTACHED_IMG_NAME VARCHAR(100) #첨부된 파일명
@@ -202,13 +202,11 @@ CREATE TABLE PAYMENT (
  	, ITEM_NUM INT REFERENCES item(ITEM_NUM)
  	, DIBS_DATE DATETIME DEFAULT SYSDATE()
  );
- 
- 
- 
- 
+  
  #################################################
  ### 이 워크시트에 CREATE 문을 다 작성해주세요 ###
 
-SELECT * FROM FAN_FUNCTION;
+
+SELECT * FROM illuminance_function;
 SELECT * FROM SHOP_MEMBER;
-SELECT * FROM PAYMENT;
+SELECT * FROM payment;

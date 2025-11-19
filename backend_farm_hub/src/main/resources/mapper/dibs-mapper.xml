@@ -1,10 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 
-<!-- 해당 파일에 모든 쿼리문을 작성 -->
-<!-- namespace에는 xml파일과 연결할 Mapper interface 파일명을 패키지를 포함하여 적어주세요 -->
 <mapper namespace="com.craft.backend_farm_hub.dibs.mapper.DibsMapper">
-	<resultMap id="dibs" type="com.craft.backend_farm_hub.dibs.dto.DibsDTO">
+  <resultMap id="dibs" type="com.craft.backend_farm_hub.dibs.dto.DibsDTO">
     <id column="DIBS_NUM" property="dibsNum" />
     <result column="MEM_ID" property="memId" />
     <result column="ITEM_NUM" property="itemNum" />
@@ -12,73 +10,57 @@
     <association property="itemDTO" resultMap="com.craft.backend_farm_hub.item.mapper.ItemMapper.items" />
   </resultMap>
 
-  <!--찜한상품을 추가하는 쿼리-->
+  <!-- 찜 추가 -->
   <insert id="addDibs">
-    INSERT INTO DIBS (
-      MEM_ID
-      , ITEM_NUM
-    ) VALUES (
-      #{memId}
-      , #{itemNum}
-    )
+    INSERT INTO DIBS (MEM_ID, ITEM_NUM)
+    VALUES (#{memId}, #{itemNum})
   </insert>
 
-  <!--찜한상품 목록 조회 쿼리-->
+  <!-- LEFT JOIN으로 삭제된 상품도 조회 -->
   <select id="getDibs" resultMap="dibs">
     SELECT
-      DIBS_NUM
-      , D.ITEM_NUM
-      , ITEM_NAME
-      , PRICE
-      , DIBS_DATE
-      , ATTACHED_IMG_NAME
-    FROM dibs D
-    INNER JOIN item I
-    ON D.ITEM_NUM = I.ITEM_NUM
-    INNER JOIN item_img IG
-    ON I.ITEM_NUM = IG.ITEM_NUM
-    WHERE IS_MAIN = 'Y'
-    ORDER BY DIBS_DATE;
+    DIBS_NUM,
+    D.MEM_ID,
+    D.ITEM_NUM,
+    ITEM_NAME,
+    PRICE,
+    DIBS_DATE,
+    ATTACHED_IMG_NAME,
+    IS_MAIN,
+    IMG_NUM
+    FROM DIBS D
+    LEFT JOIN ITEM I ON D.ITEM_NUM = I.ITEM_NUM
+    LEFT JOIN ITEM_IMG IG ON I.ITEM_NUM = IG.ITEM_NUM AND IS_MAIN = 'Y'
+    WHERE D.MEM_ID = #{memId}
+    ORDER BY DIBS_DATE DESC
   </select>
-  <!--찜 리스트 하나 삭제-->
+
+  <!-- 개별 삭제 -->
   <delete id="removeDibs">
-    DELETE FROM DIBS
-    WHERE DIBS_NUM = #{dibsNum}
+    DELETE FROM DIBS WHERE DIBS_NUM = #{dibsNum}
   </delete>
-  <!--선택한 찜 리스트 삭제-->
+
+  <!-- 선택 삭제 -->
   <delete id="removeSelectedDibs">
     DELETE FROM DIBS
-    WHERE
+    WHERE DIBS_NUM IN
+    <foreach collection="dibsNumList" item="dibsNum" open="(" separator="," close=")">
+      #{dibsNum}
+    </foreach>
+  </delete>
+
+  <!-- 찜 여부 확인 -->
+  <select id="checkDibs" resultType="int">
+    SELECT COUNT(*)
+    FROM DIBS
+    WHERE MEM_ID = #{memId}
+    AND ITEM_NUM = #{itemNum}
+  </select>
+
+  <!-- 찜 삭제 (memId + itemNum) -->
+  <delete id="removeDibsByItem">
+    DELETE FROM DIBS
+    WHERE MEM_ID = #{memId}
+    AND ITEM_NUM = #{itemNum}
   </delete>
 </mapper>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

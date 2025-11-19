@@ -75,3 +75,42 @@
   font-weight: 700;
   color: #198754;
 }
+
+.notice_container {
+  margin-top: 20px;
+  padding: 15px;
+  background-color: #fff3cd;
+  border-radius: 8px;
+  border-left: 4px solid #ffc107;
+}
+
+.notice_text {
+  margin: 0;
+  font-size: 14px;
+  color: #856404;
+  text-align: center;
+}
+
+/* 비활성화 버튼 스타일 */
+.disabled_button {
+  display: inline-block;
+  padding: 8px 16px;
+  background-color: #e9ecef;
+  color: #adb5bd;
+  border-radius: 4px;
+  font-size: 14px;
+  font-weight: 500;
+  border: 1px solid #dee2e6;
+  cursor: not-allowed;
+  user-select: none;
+}
+
+/* 기존 total_summary 위 여백 조정 */
+.total_summary {
+  margin-top: 20px;
+  padding: 20px;
+  background-color: #f8f9fa;
+  border-radius: 8px;
+  display: flex;
+  justify-content: flex-end;
+}

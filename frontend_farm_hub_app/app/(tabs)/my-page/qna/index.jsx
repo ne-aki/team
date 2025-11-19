@@ -4,6 +4,7 @@ import { useRouter } from 'expo-router';
 import axios from 'axios';
 import * as SecureStore from 'expo-secure-store';
 import dayjs from 'dayjs';
+import { Ionicons } from '@expo/vector-icons';
 import PageTitle from '@/components/common/PageTitle';
 import { SERVER_URL } from '@/constants/appConst';
 import { TouchableWithoutFeedback } from 'react-native';
@@ -15,15 +16,16 @@ const QnaMyPage = () => {
   const [userInfo, setUserInfo] = useState(null); 
   const [qnaList, setQnaList] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [authLoading, setAuthLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(0);
   
-  // 페이지당 아이템 수
   const itemsPerPage = 5;
 
   // 로그인 정보 가져오기
   useEffect(() => {
     const getLoginInfo = async () => {
       try {
+        setAuthLoading(true);
         const loginInfo = await SecureStore.getItemAsync('loginInfo');
         if (loginInfo) {
           const loginData = JSON.parse(loginInfo);
@@ -38,6 +40,9 @@ const QnaMyPage = () => {
         }
       } catch (error) {
         console.error('로그인 정보 파싱 에러:', error);
+        Alert.alert('오류', '로그인 정보를 불러오는데 실패했습니다.');
+      } finally {
+        setAuthLoading(false);
       }
     };
     getLoginInfo();
@@ -53,7 +58,8 @@ const QnaMyPage = () => {
         const res = await axios.get(`${SERVER_URL}/reply/user/${userInfo.memId}`);
         setQnaList(res.data);
       } catch (error) {
-        console.error('에러:', error);
+        console.error('문의 목록 조회 에러:', error);
+        Alert.alert('오류', '문의 목록을 불러오는데 실패했습니다.');
       } finally {
         setLoading(false);
       }
@@ -74,10 +80,52 @@ const QnaMyPage = () => {
   // 총 페이지 수
   const totalPages = Math.ceil(qnaList.length / itemsPerPage);
 
+  // 페이지 번호 계산 (최대 5개만 표시)
+  const getPageNumbers = () => {
+    const maxButtons = 5;
+    const pages = [];
+    
+    if (totalPages <= maxButtons) {
+      for (let i = 0; i < totalPages; i++) {
+        pages.push(i);
+      }
+    } else {
+      let start = Math.max(0, currentPage - 2);
+      let end = Math.min(totalPages - 1, currentPage + 2);
+      
+      if (currentPage <= 2) {
+        end = maxButtons - 1;
+      }
+      if (currentPage >= totalPages - 3) {
+        start = totalPages - maxButtons;
+      }
+      
+      for (let i = start; i <= end; i++) {
+        pages.push(i);
+      }
+    }
+    
+    return pages;
+  };
+
+  // 인증 로딩 중
+  if (authLoading) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#6c757d" />
+          <Text style={styles.loadingText}>로딩 중...</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
   return (
     <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
       <SafeAreaView style={styles.container}>
+        <View style={styles.topTitle}>
         <PageTitle title='문의 목록'/>
+        </View>
         
         <ScrollView style={styles.scrollView}>
           {loading ? (
@@ -87,7 +135,7 @@ const QnaMyPage = () => {
             </View>
           ) : qnaList.length === 0 ? (
             <View style={styles.emptyContainer}>
-              <Text style={styles.emptyIcon}>📭</Text>
+              <Ionicons name="mail-open-outline" size={48} color="#999" />
               <Text style={styles.emptyText}>등록된 문의가 없습니다.</Text>
             </View>
           ) : (
@@ -141,7 +189,7 @@ const QnaMyPage = () => {
               </View>
 
               {/* 페이지네이션 */}
-              {qnaList.length > 0 && (
+              {qnaList.length > 0 && totalPages > 1 && (
                 <View style={styles.paginationContainer}>
                   {/* 이전 버튼 */}
                   <TouchableOpacity 
@@ -149,26 +197,28 @@ const QnaMyPage = () => {
                     onPress={() => currentPage > 0 && handlePageChange(currentPage - 1)}
                     disabled={currentPage === 0}
                   >
-                    <Text style={[styles.pageButtonText, currentPage === 0 && styles.disabledText]}>
-                      {'<<'}
-                    </Text>
+                    <Ionicons 
+                      name="chevron-back" 
+                      size={20} 
+                      color={currentPage === 0 ? '#999' : '#333'} 
+                    />
                   </TouchableOpacity>
 
                   {/* 페이지 번호 */}
-                  {Array.from({ length: totalPages }, (_, i) => (
+                  {getPageNumbers().map((pageNum) => (
                     <TouchableOpacity
-                      key={i}
+                      key={pageNum}
                       style={[
                         styles.pageButton,
-                        currentPage === i && styles.activePageButton
+                        currentPage === pageNum && styles.activePageButton
                       ]}
-                      onPress={() => handlePageChange(i)}
+                      onPress={() => handlePageChange(pageNum)}
                     >
                       <Text style={[
                         styles.pageButtonText,
-                        currentPage === i && styles.activePageText
+                        currentPage === pageNum && styles.activePageText
                       ]}>
-                        {i + 1}
+                        {pageNum + 1}
                       </Text>
                     </TouchableOpacity>
                   ))}
@@ -179,9 +229,11 @@ const QnaMyPage = () => {
                     onPress={() => currentPage < totalPages - 1 && handlePageChange(currentPage + 1)}
                     disabled={currentPage === totalPages - 1}
                   >
-                    <Text style={[styles.pageButtonText, currentPage === totalPages - 1 && styles.disabledText]}>
-                      {'>>'}
-                    </Text>
+                    <Ionicons 
+                      name="chevron-forward" 
+                      size={20} 
+                      color={currentPage === totalPages - 1 ? '#999' : '#333'} 
+                    />
                   </TouchableOpacity>
                 </View>
               )}
@@ -199,6 +251,10 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#fff',
+    padding: 10,
+  },
+  topTitle:{
+    marginBottom: 8   
   },
   scrollView: {
     flex: 1,
@@ -224,14 +280,11 @@ const styles = StyleSheet.create({
     marginTop: 20,
     padding: 40,
   },
-  emptyIcon: {
-    fontSize: 48,
-    marginBottom: 12,
-  },
   emptyText: {
     fontSize: 18,
     color: '#999',
     textAlign: 'center',
+    marginTop: 12,
   },
   qnaDiv: {
     flexDirection: 'column',
@@ -370,8 +423,5 @@ const styles = StyleSheet.create({
   activePageText: {
     color: '#fff',
     fontWeight: '700',
-  },
-  disabledText: {
-    color: '#999',
   },
 });

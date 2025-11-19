@@ -42,4 +42,9 @@ public class BuyService {
     buyMapper.buyEachCartItem(buyDTO);
     cartMapper.deleteBoughtEach(buyDTO.getCartNum());
   }
+
+  //주문취소
+  public void deleteBuy(int buyNum){
+    buyMapper.deleteBuy(buyNum);
+  }
 }
